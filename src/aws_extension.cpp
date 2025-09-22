@@ -1,7 +1,6 @@
 #include "aws_secret.hpp"
 #include "aws_extension.hpp"
 
-#include "duckdb.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/catalog/catalog.hpp"
 #include "duckdb/main/extension/extension_loader.hpp"
@@ -115,6 +114,7 @@ static void LoadAWSCredentialsFun(ClientContext &context, TableFunctionInput &da
 
 	data.finished = true;
 }
+
 static void LoadInternal(ExtensionLoader &loader) {
 	Aws::SDKOptions options;
 	Aws::InitAPI(options);
@@ -135,6 +135,13 @@ static void LoadInternal(ExtensionLoader &loader) {
 	function_set.AddFunction(profile_fun);
 
 	loader.RegisterFunction(function_set);
+
+	auto &instance = loader.GetDatabaseInstance();
+	auto &config = DBConfig::GetConfig(instance);
+
+	config.AddExtensionOption(duckdb::aws::ErrorOnEmptySecretCreate_Name,
+	                          "During AWS CREATE SECRET determines response to empty/unavailable credentials",
+	                          LogicalType::BOOLEAN, Value(aws::ErrorOnEmptySecretCreate_Default));
 
 	CreateAwsSecretFunctions::Register(loader);
 }

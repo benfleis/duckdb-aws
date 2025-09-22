@@ -215,6 +215,7 @@ static unique_ptr<BaseSecret> CreateAWSSecretFromCredentialChain(ClientContext &
 	if (!assume_role.empty() && chain.empty()) {
 		throw InvalidConfigurationException("Must pass CHAIN value when passing ASSUME_ROLE_ARN");
 	}
+
 	if (!chain.empty()) {
 		DuckDBCustomAWSCredentialsProviderChain provider(chain, profile, assume_role, external_id);
 		credentials = provider.GetAWSCredentials();
@@ -239,7 +240,13 @@ static unique_ptr<BaseSecret> CreateAWSSecretFromCredentialChain(ClientContext &
 		credentials = provider.GetAWSCredentials();
 	}
 
-	if (credentials.IsEmpty()) {
+	bool error_on_empty = duckdb::aws::ErrorOnEmptySecretCreate_Default;
+	Value setting;
+	if (context.TryGetCurrentSetting(duckdb::aws::ErrorOnEmptySecretCreate_Name, setting)) {
+		error_on_empty = BooleanValue::Get(setting);
+	}
+
+	if (credentials.IsEmpty() && error_on_empty) {
 		throw InvalidInputException(ConstructErrorMessage(chain, profile, assume_role, external_id));
 	}
 

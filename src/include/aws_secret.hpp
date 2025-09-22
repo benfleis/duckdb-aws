@@ -17,4 +17,15 @@ public:
 	static void InitializeCurlCertificates(DatabaseInstance &db);
 };
 
+namespace aws {
+// XXX: norms on both core && ext options, names? #defines, ns'd global symbols, struct?
+//
+// By default raise error when secret create cannot find credentials.
+// For backward compatibility allow this to be disabled (set to false)
+// via `SET aws__error_on_empty_secret_create = true;`
+// XXX: note the aws__ namespace in key, seeking feedback
+static const char *const ErrorOnEmptySecretCreate_Name = "aws__error_on_empty_secret_create";
+static const bool ErrorOnEmptySecretCreate_Default = true;
+}
+
 } // namespace duckdb
