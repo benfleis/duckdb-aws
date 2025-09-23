@@ -1,17 +1,24 @@
 #!/bin/bash
-# Warning: overwrites your existing aws credentials file!
 
-# Set the file path for the credentials file
-credentials_file=~/.aws/credentials
+set -o noclobber
+# WARNING: moves your existing config/credentials with single archive
 
-# Set the file path for the config file
-config_file=~/.aws/config
+# Set default file path for config & credentials file if unset
+: ${AWS_CONFIG_FILE:=$HOME/.aws/config}
+: ${AWS_SHARED_CREDENTIALS_FILE:=$HOME/.aws/credentials}
 
 # create dir if not already exists
-mkdir -p ~/.aws
+for file in $AWS_CONFIG_FILE $AWS_SHARED_CREDENTIALS_FILE; do
+    mkdir -p $(dirname "$file")
+    [[ -r "$file" ]] && {
+        echo "- ARCHIVE $file -> $file-previous" >&2
+        mv -f "$file" "${file}-previous"
+    }
+done
 
 # Create the credentials configuration
-credentials_str="[default]
+credentials_str="
+[default]
 aws_access_key_id=minio_duckdb_user
 aws_secret_access_key=minio_duckdb_user_password
 
@@ -37,10 +44,12 @@ external_id = 128289344
 "
 
 # Write the credentials configuration to the file
-echo "$credentials_str" > "$credentials_file"
+echo "$credentials_str" >"$AWS_SHARED_CREDENTIALS_FILE"
+echo "- CREATE $AWS_SHARED_CREDENTIALS_FILE"
 
 # Create the credentials configuration
-config_str="[default]
+config_str="
+[default]
 region=eu-west-1
 
 [profile minio-testing-2]
@@ -51,4 +60,8 @@ region=the-moon-123
 "
 
 # Write the config to the file
-echo "$config_str" > "$config_file"
+echo "$config_str" >"$AWS_CONFIG_FILE"
+echo "- CREATE $AWS_CONFIG_FILE"
+
+echo OK
+
